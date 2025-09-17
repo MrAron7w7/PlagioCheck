@@ -32,6 +32,7 @@ import {
   type PlagiarismResult,
   generateReport,
 } from "@/lib/plagiarism-detector";
+import { downloadPDF } from "@/lib/pdf-generator";
 
 export function ResultsComparison() {
   const [results, setResults] = useState<PlagiarismResult[]>([]);
@@ -64,20 +65,69 @@ export function ResultsComparison() {
     return "Bajo Riesgo";
   };
 
-  const handleDownload = (result: PlagiarismResult) => {
-    const report = generateReport(result);
-    const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `reporte-plagio-${result.id.substring(0, 8)}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownload = (
+    result: PlagiarismResult,
+    format: "txt" | "pdf" = "txt"
+  ) => {
+    if (format === "pdf") {
+      downloadPDF(result);
+    } else {
+      const report = generateReport(result);
+      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `reporte-plagio-${result.id.substring(0, 8)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   };
 
-  // Calculate summary stats
+  const HighlightedText = ({
+    text,
+    matches,
+    isDocumentA = true,
+  }: {
+    text: string;
+    matches: any[];
+    isDocumentA?: boolean;
+  }) => {
+    const words = text.split(" ");
+
+    return (
+      <div className="text-sm leading-relaxed">
+        {words
+          .map((word, index) => {
+            const match = matches.find((m) => {
+              const start = isDocumentA ? m.startA : m.startB;
+              const end = isDocumentA ? m.endA : m.endB;
+              return index >= start && index < end;
+            });
+
+            if (match) {
+              return (
+                <span
+                  key={index}
+                  className="px-1 py-0.5 rounded text-white font-medium"
+                  style={{ backgroundColor: match.color }}
+                  title={`Coincidencia ${
+                    matches.indexOf(match) + 1
+                  } - ${Math.round(match.similarity * 100)}% similar`}
+                >
+                  {word}
+                </span>
+              );
+            }
+
+            return <span key={index}>{word}</span>;
+          })
+          .reduce((prev, curr, index) => [prev, " ", curr])}
+      </div>
+    );
+  };
+
   const highRiskCount = results.filter((r) => r.similarity >= 70).length;
   const mediumRiskCount = results.filter(
     (r) => r.similarity >= 40 && r.similarity < 70
@@ -221,92 +271,222 @@ export function ResultsComparison() {
                               Ver Detalles
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh]">
+                          <DialogContent className="max-w-6xl max-h-[90vh]">
                             <DialogHeader>
-                              <DialogTitle>Detalles de Comparación</DialogTitle>
+                              <DialogTitle>
+                                Análisis Detallado de Plagio
+                              </DialogTitle>
                               <DialogDescription>
-                                Análisis detallado de similitudes entre{" "}
-                                {result.documentA} y {result.documentB}
+                                Comparación completa entre {result.documentA} y{" "}
+                                {result.documentB}
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Resumen</h4>
-                                  <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                      <span>Similitud:</span>
-                                      <span className="font-bold">
+                            <div className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Card>
+                                  <CardContent className="pt-4">
+                                    <div className="text-center">
+                                      <div
+                                        className="text-3xl font-bold mb-2"
+                                        style={{
+                                          color:
+                                            result.similarity >= 70
+                                              ? "#dc2626"
+                                              : result.similarity >= 40
+                                              ? "#d97706"
+                                              : "#16a34a",
+                                        }}
+                                      >
                                         {result.similarity}%
-                                      </span>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        Similitud Total
+                                      </p>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span>Coincidencias:</span>
-                                      <span>{result.totalMatches}</span>
+                                  </CardContent>
+                                </Card>
+                                <Card>
+                                  <CardContent className="pt-4">
+                                    <div className="text-center">
+                                      <div className="text-3xl font-bold mb-2 text-blue-600">
+                                        {result.totalMatches}
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        Coincidencias
+                                      </p>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <span>Fecha:</span>
-                                      <span>
-                                        {new Date(
-                                          result.date
-                                        ).toLocaleDateString("es-ES")}
-                                      </span>
+                                  </CardContent>
+                                </Card>
+                                <Card>
+                                  <CardContent className="pt-4">
+                                    <div className="text-center">
+                                      <Badge
+                                        className={getSimilarityColor(
+                                          result.similarity
+                                        )}
+                                      >
+                                        {getSimilarityIcon(result.similarity)}
+                                        <span className="ml-1">
+                                          {getSimilarityLabel(
+                                            result.similarity
+                                          )}
+                                        </span>
+                                      </Badge>
                                     </div>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium mb-2">
-                                    Nivel de Riesgo
-                                  </h4>
-                                  <Badge
-                                    className={getSimilarityColor(
-                                      result.similarity
-                                    )}
-                                  >
-                                    {getSimilarityIcon(result.similarity)}
-                                    <span className="ml-1">
-                                      {getSimilarityLabel(result.similarity)}
-                                    </span>
-                                  </Badge>
-                                </div>
+                                  </CardContent>
+                                </Card>
                               </div>
 
-                              <div>
-                                <h4 className="font-medium mb-2">
-                                  Textos Similares Detectados
-                                </h4>
-                                <ScrollArea className="h-64 border rounded-lg p-4">
-                                  <div className="space-y-3">
-                                    {result.matches.length > 0 ? (
-                                      result.matches.map((match, index) => (
+                              {result.matches.length > 0 && (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg">
+                                      Leyenda de Colores
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="flex flex-wrap gap-2">
+                                      {result.matches.map((match, index) => (
                                         <div
                                           key={index}
-                                          className="p-3 bg-muted rounded-lg"
+                                          className="flex items-center gap-2 text-sm"
                                         >
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium">
-                                              Coincidencia #{index + 1}
-                                            </span>
-                                            <Badge variant="secondary">
-                                              {Math.round(
-                                                match.similarity * 100
-                                              )}
-                                              % similar
-                                            </Badge>
-                                          </div>
-                                          <p className="text-sm text-muted-foreground italic">
-                                            {match.text}
-                                          </p>
+                                          <div
+                                            className="w-4 h-4 rounded"
+                                            style={{
+                                              backgroundColor: match.color,
+                                            }}
+                                          />
+                                          <span>
+                                            Coincidencia {index + 1} (
+                                            {Math.round(match.similarity * 100)}
+                                            %)
+                                          </span>
                                         </div>
-                                      ))
-                                    ) : (
-                                      <p className="text-sm text-muted-foreground text-center py-4">
-                                        No se encontraron coincidencias
-                                        significativas
-                                      </p>
-                                    )}
-                                  </div>
-                                </ScrollArea>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                      <FileText className="h-5 w-5" />
+                                      {result.documentA}
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <ScrollArea className="h-96">
+                                      <HighlightedText
+                                        text={result.textA}
+                                        matches={result.matches}
+                                        isDocumentA={true}
+                                      />
+                                    </ScrollArea>
+                                  </CardContent>
+                                </Card>
+
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                      <FileText className="h-5 w-5" />
+                                      {result.documentB}
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <ScrollArea className="h-96">
+                                      <HighlightedText
+                                        text={result.textB}
+                                        matches={result.matches}
+                                        isDocumentA={false}
+                                      />
+                                    </ScrollArea>
+                                  </CardContent>
+                                </Card>
+                              </div>
+
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">
+                                    Coincidencias Detectadas
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <ScrollArea className="h-64">
+                                    <div className="space-y-3">
+                                      {result.matches.length > 0 ? (
+                                        result.matches.map((match, index) => (
+                                          <div
+                                            key={index}
+                                            className="p-4 border rounded-lg"
+                                          >
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="flex items-center gap-2">
+                                                <div
+                                                  className="w-4 h-4 rounded"
+                                                  style={{
+                                                    backgroundColor:
+                                                      match.color,
+                                                  }}
+                                                />
+                                                <span className="font-medium">
+                                                  Coincidencia #{index + 1}
+                                                </span>
+                                              </div>
+                                              <Badge variant="secondary">
+                                                {Math.round(
+                                                  match.similarity * 100
+                                                )}
+                                                % similar
+                                              </Badge>
+                                            </div>
+                                            <div className="bg-muted p-3 rounded text-sm">
+                                              <p className="italic">
+                                                "{match.text}"
+                                              </p>
+                                            </div>
+                                            <div className="mt-2 text-xs text-muted-foreground">
+                                              <span>
+                                                Posición en {result.documentA}:
+                                                palabras {match.startA}-
+                                                {match.endA}
+                                              </span>
+                                              <span className="mx-2">•</span>
+                                              <span>
+                                                Posición en {result.documentB}:
+                                                palabras {match.startB}-
+                                                {match.endB}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground text-center py-4">
+                                          No se encontraron coincidencias
+                                          significativas
+                                        </p>
+                                      )}
+                                    </div>
+                                  </ScrollArea>
+                                </CardContent>
+                              </Card>
+
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleDownload(result, "txt")}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Descargar TXT
+                                </Button>
+                                <Button
+                                  onClick={() => handleDownload(result, "pdf")}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Descargar PDF
+                                </Button>
                               </div>
                             </div>
                           </DialogContent>
@@ -314,10 +494,10 @@ export function ResultsComparison() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(result)}
+                          onClick={() => handleDownload(result, "pdf")}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Descargar
+                          PDF
                         </Button>
                       </>
                     )}

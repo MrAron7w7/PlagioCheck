@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import {
@@ -13,12 +13,15 @@ import {
   User,
   Menu,
   X,
+  TrendingUp,
+  AlertTriangle,
 } from "lucide-react";
+import { DocumentUpload } from "@/components/document-upload";
 import { ResultsComparison } from "@/components/results-comparison";
+import { ComparisonHistory } from "@/components/comparison-history";
 import { AccountSettings } from "@/components/account-settings";
+import { Card, CardContent } from "@/components/ui/card";
 import type { PlagiarismResult } from "@/lib/plagiarism-detector";
-import { DocumentUpload } from "./document-upload";
-import { ComparisonHistory } from "./comparison-history";
 
 type ActiveSection = "upload" | "results" | "history" | "settings";
 
@@ -26,6 +29,12 @@ export function Dashboard() {
   const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState<ActiveSection>("upload");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState({
+    totalAnalyses: 0,
+    highRiskCount: 0,
+    mediumRiskCount: 0,
+    lowRiskCount: 0,
+  });
 
   const menuItems = [
     { id: "upload" as const, label: "Subir Documentos", icon: Upload },
@@ -34,9 +43,34 @@ export function Dashboard() {
     { id: "settings" as const, label: "Configuración", icon: Settings },
   ];
 
+  useEffect(() => {
+    const savedResults = localStorage.getItem("plagiarism-results");
+    if (savedResults) {
+      const results: PlagiarismResult[] = JSON.parse(savedResults);
+      setStats({
+        totalAnalyses: results.length,
+        highRiskCount: results.filter((r) => r.similarity >= 70).length,
+        mediumRiskCount: results.filter(
+          (r) => r.similarity >= 40 && r.similarity < 70
+        ).length,
+        lowRiskCount: results.filter((r) => r.similarity < 40).length,
+      });
+    }
+  }, [activeSection]); // Refresh stats when section changes
+
   const handleAnalysisComplete = (result: PlagiarismResult) => {
     console.log("[v0] Analysis completed:", result);
-    // Results will be automatically updated in ResultsComparison component
+    setStats((prev) => ({
+      totalAnalyses: prev.totalAnalyses + 1,
+      highRiskCount:
+        result.similarity >= 70 ? prev.highRiskCount + 1 : prev.highRiskCount,
+      mediumRiskCount:
+        result.similarity >= 40 && result.similarity < 70
+          ? prev.mediumRiskCount + 1
+          : prev.mediumRiskCount,
+      lowRiskCount:
+        result.similarity < 40 ? prev.lowRiskCount + 1 : prev.lowRiskCount,
+    }));
   };
 
   const handleNavigateToResults = () => {
@@ -48,10 +82,87 @@ export function Dashboard() {
     switch (activeSection) {
       case "upload":
         return (
-          <DocumentUpload
-            onAnalysisComplete={handleAnalysisComplete}
-            onNavigateToResults={handleNavigateToResults}
-          />
+          <div className="space-y-6">
+            {stats.totalAnalyses > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                        <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {stats.totalAnalyses}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Análisis
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                        <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                          {stats.highRiskCount}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Alto Riesgo
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {stats.mediumRiskCount}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Riesgo Medio
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                        <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {stats.lowRiskCount}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Bajo Riesgo
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            <DocumentUpload
+              onAnalysisComplete={handleAnalysisComplete}
+              onNavigateToResults={handleNavigateToResults}
+            />
+          </div>
         );
       case "results":
         return <ResultsComparison />;
@@ -101,6 +212,11 @@ export function Dashboard() {
                 PlagioCheck
               </span>
             </div>
+            <div className="mt-2">
+              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                Pro v2.0
+              </span>
+            </div>
           </div>
 
           {/* User info */}
@@ -115,6 +231,28 @@ export function Dashboard() {
               </div>
             </div>
           </div>
+
+          {stats.totalAnalyses > 0 && (
+            <div className="p-4 border-b border-border">
+              <div className="text-xs text-muted-foreground mb-2">
+                Resumen Rápido
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="text-center p-2 bg-muted rounded">
+                  <div className="font-bold text-blue-600">
+                    {stats.totalAnalyses}
+                  </div>
+                  <div className="text-muted-foreground">Total</div>
+                </div>
+                <div className="text-center p-2 bg-muted rounded">
+                  <div className="font-bold text-red-600">
+                    {stats.highRiskCount}
+                  </div>
+                  <div className="text-muted-foreground">Alto</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 p-4">
@@ -169,7 +307,9 @@ export function Dashboard() {
                   "Dashboard"}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Bienvenido, {user?.name}
+                {activeSection === "upload" && stats.totalAnalyses > 0
+                  ? `Has realizado ${stats.totalAnalyses} análisis hasta ahora`
+                  : `Bienvenido, ${user?.name}`}
               </p>
             </div>
             <div className="hidden lg:block">

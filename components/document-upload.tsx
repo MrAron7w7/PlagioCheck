@@ -20,6 +20,8 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Zap,
+  Shield,
 } from "lucide-react";
 import {
   detectPlagiarism,
@@ -47,6 +49,7 @@ export function DocumentUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStage, setAnalysisStage] = useState("");
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -130,18 +133,33 @@ export function DocumentUpload({
     setAnalysisProgress(0);
 
     try {
-      // Simulate progress updates
+      const stages = [
+        "Extrayendo texto de documentos...",
+        "Procesando contenido...",
+        "Analizando similitudes...",
+        "Calculando coincidencias...",
+        "Generando reporte final...",
+      ];
+
+      let currentStage = 0;
       const progressInterval = setInterval(() => {
         setAnalysisProgress((prev) => {
-          if (prev >= 90) {
+          const newProgress = prev + 15;
+          if (newProgress >= stages.length * 20) {
             clearInterval(progressInterval);
             return 90;
           }
-          return prev + 10;
-        });
-      }, 300);
 
-      // Perform actual plagiarism detection
+          const stageIndex = Math.floor(newProgress / 20);
+          if (stageIndex !== currentStage && stageIndex < stages.length) {
+            setAnalysisStage(stages[stageIndex]);
+            currentStage = stageIndex;
+          }
+
+          return newProgress;
+        });
+      }, 800);
+
       const fileA = uploadedFiles[0].file!;
       const fileB = uploadedFiles[1].file!;
 
@@ -149,8 +167,8 @@ export function DocumentUpload({
 
       clearInterval(progressInterval);
       setAnalysisProgress(100);
+      setAnalysisStage("¡Análisis completado!");
 
-      // Store result in localStorage for persistence
       const existingResults = JSON.parse(
         localStorage.getItem("plagiarism-results") || "[]"
       );
@@ -160,22 +178,22 @@ export function DocumentUpload({
         JSON.stringify(updatedResults)
       );
 
-      // Notify parent component
       if (onAnalysisComplete) {
         onAnalysisComplete(result);
       }
 
-      // Navigate to results after a short delay
       setTimeout(() => {
         setIsAnalyzing(false);
+        setAnalysisStage("");
         if (onNavigateToResults) {
           onNavigateToResults();
         }
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Error during analysis:", error);
       setIsAnalyzing(false);
       setAnalysisProgress(0);
+      setAnalysisStage("");
     }
   };
 
@@ -183,7 +201,25 @@ export function DocumentUpload({
 
   return (
     <div className="space-y-6">
-      {/* Upload Area */}
+      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <Zap className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary">
+                Detección Avanzada de Plagio
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Algoritmos de IA que detectan similitudes con precisión
+                profesional, similar a Turnitin
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -239,7 +275,6 @@ export function DocumentUpload({
         </CardContent>
       </Card>
 
-      {/* File List */}
       {files.length > 0 && (
         <Card>
           <CardHeader>
@@ -293,13 +328,15 @@ export function DocumentUpload({
         </Card>
       )}
 
-      {/* Analysis Button */}
       {uploadedFiles.length >= 2 && (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <div>
-                <h3 className="font-semibold">Listo para Analizar</h3>
+                <h3 className="font-semibold flex items-center justify-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Listo para Analizar
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {uploadedFiles.length} documentos listos para comparación de
                   plagio
@@ -316,7 +353,10 @@ export function DocumentUpload({
                     Analizando Plagio...
                   </>
                 ) : (
-                  "Analizar Plagio"
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Analizar Plagio
+                  </>
                 )}
               </Button>
               {isAnalyzing && (
@@ -328,8 +368,8 @@ export function DocumentUpload({
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Analizando documentos en busca de similitudes...{" "}
-                      {analysisProgress}%
+                      {analysisStage ||
+                        `Analizando documentos... ${analysisProgress}%`}
                     </AlertDescription>
                   </Alert>
                 </div>
