@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
         >
           <Suspense fallback={null}>{children}</Suspense>
         </ThemeProvider>
+        {/* <Toaster /> */}
       </body>
     </html>
   );

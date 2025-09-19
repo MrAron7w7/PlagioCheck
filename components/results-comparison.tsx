@@ -26,19 +26,17 @@ import {
   CheckCircle,
   Eye,
   Download,
-  RefreshCw,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 import {
-  type PlagiarismResult,
-  generateReport,
-} from "@/lib/plagiarism-detector";
-import { downloadPDF } from "@/lib/pdf-generator";
+  generatePlagiarismReport,
+  type ReportData,
+} from "@/lib/pdf-report-generator";
 
 export function ResultsComparison() {
-  const [results, setResults] = useState<PlagiarismResult[]>([]);
-  const [selectedResult, setSelectedResult] = useState<PlagiarismResult | null>(
-    null
-  );
+  const [results, setResults] = useState<any[]>([]);
+  const [selectedResult, setSelectedResult] = useState<any | null>(null);
 
   useEffect(() => {
     const savedResults = localStorage.getItem("plagiarism-results");
@@ -65,74 +63,52 @@ export function ResultsComparison() {
     return "Bajo Riesgo";
   };
 
-  const handleDownload = (
-    result: PlagiarismResult,
-    format: "txt" | "pdf" = "txt"
-  ) => {
-    if (format === "pdf") {
-      downloadPDF(result);
-    } else {
-      const report = generateReport(result);
-      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `reporte-plagio-${result.id.substring(0, 8)}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
+  const handleDownloadPDF = (result: any) => {
+    const reportData: ReportData = {
+      documents: result.documents?.map((name: string) => ({
+        name,
+        content: "",
+      })) || [
+        {
+          name: result.documentA || "Documento A",
+          content: result.textA || "",
+        },
+        {
+          name: result.documentB || "Documento B",
+          content: result.textB || "",
+        },
+      ],
+      result: {
+        overallSimilarity: result.overallSimilarity || result.similarity || 0,
+        matches: result.matches || [],
+        summary:
+          result.summary ||
+          `Análisis completado con ${
+            result.overallSimilarity || result.similarity
+          }% de similitud`,
+        recommendations: result.recommendations || [
+          "Revisa las coincidencias encontradas",
+          "Considera citar las fuentes apropiadamente",
+        ],
+      },
+      analysisDate: result.analysisDate
+        ? new Date(result.analysisDate)
+        : new Date(),
+    };
+
+    generatePlagiarismReport(reportData);
   };
 
-  const HighlightedText = ({
-    text,
-    matches,
-    isDocumentA = true,
-  }: {
-    text: string;
-    matches: any[];
-    isDocumentA?: boolean;
-  }) => {
-    const words = text.split(" ");
-
-    return (
-      <div className="text-sm leading-relaxed">
-        {words
-          .map((word, index) => {
-            const match = matches.find((m) => {
-              const start = isDocumentA ? m.startA : m.startB;
-              const end = isDocumentA ? m.endA : m.endB;
-              return index >= start && index < end;
-            });
-
-            if (match) {
-              return (
-                <span
-                  key={index}
-                  className="px-1 py-0.5 rounded text-white font-medium"
-                  style={{ backgroundColor: match.color }}
-                  title={`Coincidencia ${
-                    matches.indexOf(match) + 1
-                  } - ${Math.round(match.similarity * 100)}% similar`}
-                >
-                  {word}
-                </span>
-              );
-            }
-
-            return <span key={index}>{word}</span>;
-          })
-          .reduce((prev, curr, index) => [prev, " ", curr])}
-      </div>
-    );
-  };
-
-  const highRiskCount = results.filter((r) => r.similarity >= 70).length;
-  const mediumRiskCount = results.filter(
-    (r) => r.similarity >= 40 && r.similarity < 70
+  const highRiskCount = results.filter(
+    (r) => (r.overallSimilarity || r.similarity) >= 70
   ).length;
-  const lowRiskCount = results.filter((r) => r.similarity < 40).length;
+  const mediumRiskCount = results.filter((r) => {
+    const sim = r.overallSimilarity || r.similarity;
+    return sim >= 40 && sim < 70;
+  }).length;
+  const lowRiskCount = results.filter(
+    (r) => (r.overallSimilarity || r.similarity) < 40
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -191,97 +167,128 @@ export function ResultsComparison() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Resultados de Comparación
+            <Brain className="h-5 w-5" />
+            Resultados de Análisis con IA
           </CardTitle>
           <CardDescription>
-            Resultados de las comparaciones de plagio realizadas
+            Resultados de las comparaciones de plagio realizadas con Gemini AI
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {results.map((result) => (
-              <div key={result.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-3">
-                    {/* Document names */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{result.documentA}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="ml-6">vs</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{result.documentB}</span>
-                      </div>
-                    </div>
+            {results.map((result) => {
+              const similarity =
+                result.overallSimilarity || result.similarity || 0;
+              const matchCount =
+                result.matches?.length || result.totalMatches || 0;
 
-                    {/* Similarity */}
-                    {result.status === "completed" && (
+              return (
+                <div key={result.id} className="border rounded-lg p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                      {/* Document names */}
+                      <div className="space-y-1">
+                        {result.documents ? (
+                          result.documents.map((doc: string, index: number) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{doc}</span>
+                              {result.analysisType && (
+                                <Badge variant="secondary" className="ml-2">
+                                  <Brain className="h-3 w-3 mr-1" />
+                                  {result.analysisType}
+                                </Badge>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 text-sm">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">
+                                {result.documentA}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span className="ml-6">vs</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">
+                                {result.documentB}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Similarity */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">Similitud</span>
                           <span className="text-sm font-bold">
-                            {result.similarity}%
+                            {similarity}%
                           </span>
                         </div>
-                        <Progress value={result.similarity} className="h-2" />
+                        <Progress value={similarity} className="h-2" />
                         <div className="flex items-center justify-between">
                           <Badge
                             variant="outline"
-                            className={getSimilarityColor(result.similarity)}
+                            className={getSimilarityColor(similarity)}
                           >
-                            {getSimilarityIcon(result.similarity)}
+                            {getSimilarityIcon(similarity)}
                             <span className="ml-1">
-                              {getSimilarityLabel(result.similarity)}
+                              {getSimilarityLabel(similarity)}
                             </span>
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {result.totalMatches} coincidencias encontradas
+                            {matchCount} coincidencias encontradas
                           </span>
                         </div>
                       </div>
-                    )}
 
-                    {result.status === "processing" && (
-                      <div className="flex items-center gap-2">
-                        <RefreshCw className="h-4 w-4 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">
-                          Procesando...
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                      {result.analysisDate && (
+                        <div className="text-xs text-muted-foreground">
+                          Analizado el{" "}
+                          {new Date(result.analysisDate).toLocaleDateString(
+                            "es-ES"
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2">
-                    {result.status === "completed" && (
-                      <>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedResult(result)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalles
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-6xl max-h-[90vh]">
-                            <DialogHeader>
-                              <DialogTitle>
-                                Análisis Detallado de Plagio
-                              </DialogTitle>
-                              <DialogDescription>
-                                Comparación completa entre {result.documentA} y{" "}
-                                {result.documentB}
-                              </DialogDescription>
-                            </DialogHeader>
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedResult(result)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalles
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full">
+                          <DialogHeader className="pb-4">
+                            <DialogTitle className="flex items-center gap-2">
+                              <Brain className="h-5 w-5" />
+                              Análisis Detallado con IA
+                            </DialogTitle>
+                            <DialogDescription>
+                              {result.documents
+                                ? `Comparación entre ${result.documents.length} documentos`
+                                : `Comparación entre ${result.documentA} y ${result.documentB}`}
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          <ScrollArea className="flex-1 pr-4">
                             <div className="space-y-6">
+                              {/* Summary Cards */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <Card>
                                   <CardContent className="pt-4">
@@ -290,14 +297,14 @@ export function ResultsComparison() {
                                         className="text-3xl font-bold mb-2"
                                         style={{
                                           color:
-                                            result.similarity >= 70
+                                            similarity >= 70
                                               ? "#dc2626"
-                                              : result.similarity >= 40
+                                              : similarity >= 40
                                               ? "#d97706"
                                               : "#16a34a",
                                         }}
                                       >
-                                        {result.similarity}%
+                                        {similarity}%
                                       </div>
                                       <p className="text-sm text-muted-foreground">
                                         Similitud Total
@@ -309,7 +316,7 @@ export function ResultsComparison() {
                                   <CardContent className="pt-4">
                                     <div className="text-center">
                                       <div className="text-3xl font-bold mb-2 text-blue-600">
-                                        {result.totalMatches}
+                                        {matchCount}
                                       </div>
                                       <p className="text-sm text-muted-foreground">
                                         Coincidencias
@@ -322,14 +329,12 @@ export function ResultsComparison() {
                                     <div className="text-center">
                                       <Badge
                                         className={getSimilarityColor(
-                                          result.similarity
+                                          similarity
                                         )}
                                       >
-                                        {getSimilarityIcon(result.similarity)}
+                                        {getSimilarityIcon(similarity)}
                                         <span className="ml-1">
-                                          {getSimilarityLabel(
-                                            result.similarity
-                                          )}
+                                          {getSimilarityLabel(similarity)}
                                         </span>
                                       </Badge>
                                     </div>
@@ -337,174 +342,153 @@ export function ResultsComparison() {
                                 </Card>
                               </div>
 
-                              {result.matches.length > 0 && (
+                              {/* AI Summary */}
+                              {result.summary && (
                                 <Card>
                                   <CardHeader>
-                                    <CardTitle className="text-lg">
-                                      Leyenda de Colores
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                      <Sparkles className="h-5 w-5" />
+                                      Resumen del Análisis IA
                                     </CardTitle>
                                   </CardHeader>
                                   <CardContent>
-                                    <div className="flex flex-wrap gap-2">
-                                      {result.matches.map((match, index) => (
-                                        <div
-                                          key={index}
-                                          className="flex items-center gap-2 text-sm"
-                                        >
-                                          <div
-                                            className="w-4 h-4 rounded"
-                                            style={{
-                                              backgroundColor: match.color,
-                                            }}
-                                          />
-                                          <span>
-                                            Coincidencia {index + 1} (
-                                            {Math.round(match.similarity * 100)}
-                                            %)
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
+                                    <p className="text-sm leading-relaxed">
+                                      {result.summary}
+                                    </p>
                                   </CardContent>
                                 </Card>
                               )}
 
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* AI Recommendations */}
+                              {result.recommendations &&
+                                result.recommendations.length > 0 && (
+                                  <Card>
+                                    <CardHeader>
+                                      <CardTitle className="text-lg flex items-center gap-2">
+                                        <Brain className="h-5 w-5" />
+                                        Recomendaciones IA
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                      <ul className="space-y-2">
+                                        {result.recommendations.map(
+                                          (rec: string, index: number) => (
+                                            <li
+                                              key={index}
+                                              className="flex items-start gap-2 text-sm"
+                                            >
+                                              <span className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium text-primary mt-0.5">
+                                                {index + 1}
+                                              </span>
+                                              <span className="leading-relaxed">
+                                                {rec}
+                                              </span>
+                                            </li>
+                                          )
+                                        )}
+                                      </ul>
+                                    </CardContent>
+                                  </Card>
+                                )}
+
+                              {/* Matches Section */}
+                              {result.matches && result.matches.length > 0 && (
                                 <Card>
                                   <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                      <FileText className="h-5 w-5" />
-                                      {result.documentA}
+                                    <CardTitle className="text-lg">
+                                      Coincidencias Detectadas por IA
                                     </CardTitle>
                                   </CardHeader>
                                   <CardContent>
-                                    <ScrollArea className="h-96">
-                                      <HighlightedText
-                                        text={result.textA}
-                                        matches={result.matches}
-                                        isDocumentA={true}
-                                      />
-                                    </ScrollArea>
-                                  </CardContent>
-                                </Card>
-
-                                <Card>
-                                  <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                      <FileText className="h-5 w-5" />
-                                      {result.documentB}
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <ScrollArea className="h-96">
-                                      <HighlightedText
-                                        text={result.textB}
-                                        matches={result.matches}
-                                        isDocumentA={false}
-                                      />
-                                    </ScrollArea>
-                                  </CardContent>
-                                </Card>
-                              </div>
-
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="text-lg">
-                                    Coincidencias Detectadas
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <ScrollArea className="h-64">
-                                    <div className="space-y-3">
-                                      {result.matches.length > 0 ? (
-                                        result.matches.map((match, index) => (
+                                    <div className="space-y-4">
+                                      {result.matches.map(
+                                        (match: any, index: number) => (
                                           <div
                                             key={index}
-                                            className="p-4 border rounded-lg"
+                                            className="p-4 border rounded-lg bg-muted/30"
                                           >
                                             <div className="flex items-center justify-between mb-3">
                                               <div className="flex items-center gap-2">
-                                                <div
-                                                  className="w-4 h-4 rounded"
-                                                  style={{
-                                                    backgroundColor:
-                                                      match.color,
-                                                  }}
-                                                />
+                                                <span className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                                  {index + 1}
+                                                </span>
                                                 <span className="font-medium">
                                                   Coincidencia #{index + 1}
                                                 </span>
                                               </div>
                                               <Badge variant="secondary">
-                                                {Math.round(
-                                                  match.similarity * 100
-                                                )}
-                                                % similar
+                                                {match.similarity}% similar
                                               </Badge>
                                             </div>
-                                            <div className="bg-muted p-3 rounded text-sm">
-                                              <p className="italic">
-                                                "{match.text}"
-                                              </p>
-                                            </div>
-                                            <div className="mt-2 text-xs text-muted-foreground">
-                                              <span>
-                                                Posición en {result.documentA}:
-                                                palabras {match.startA}-
-                                                {match.endA}
-                                              </span>
-                                              <span className="mx-2">•</span>
-                                              <span>
-                                                Posición en {result.documentB}:
-                                                palabras {match.startB}-
-                                                {match.endB}
-                                              </span>
+
+                                            <div className="space-y-3">
+                                              <div>
+                                                <p className="text-sm font-medium mb-1">
+                                                  Texto original:
+                                                </p>
+                                                <div className="bg-red-50 border border-red-200 p-3 rounded text-sm">
+                                                  <p className="text-red-800">
+                                                    "{match.originalText}"
+                                                  </p>
+                                                </div>
+                                              </div>
+
+                                              <div>
+                                                <p className="text-sm font-medium mb-1">
+                                                  Texto similar encontrado:
+                                                </p>
+                                                <div className="bg-red-50 border border-red-200 p-3 rounded text-sm">
+                                                  <p className="text-red-800">
+                                                    "{match.matchedText}"
+                                                  </p>
+                                                </div>
+                                              </div>
+
+                                              <div className="text-xs text-muted-foreground">
+                                                <span>
+                                                  Fuente: {match.sourceDocument}
+                                                </span>
+                                                <span className="mx-2">•</span>
+                                                <span>
+                                                  Posición: {match.startIndex}-
+                                                  {match.endIndex}
+                                                </span>
+                                              </div>
                                             </div>
                                           </div>
-                                        ))
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground text-center py-4">
-                                          No se encontraron coincidencias
-                                          significativas
-                                        </p>
+                                        )
                                       )}
                                     </div>
-                                  </ScrollArea>
-                                </CardContent>
-                              </Card>
+                                  </CardContent>
+                                </Card>
+                              )}
 
-                              <div className="flex gap-2 justify-end">
+                              {/* Download Actions */}
+                              <div className="flex gap-2 justify-end pt-4 border-t">
                                 <Button
-                                  variant="outline"
-                                  onClick={() => handleDownload(result, "txt")}
+                                  onClick={() => handleDownloadPDF(result)}
                                 >
                                   <Download className="h-4 w-4 mr-2" />
-                                  Descargar TXT
-                                </Button>
-                                <Button
-                                  onClick={() => handleDownload(result, "pdf")}
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  Descargar PDF
+                                  Descargar Reporte PDF
                                 </Button>
                               </div>
                             </div>
-                          </DialogContent>
-                        </Dialog>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDownload(result, "pdf")}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          PDF
-                        </Button>
-                      </>
-                    )}
+                          </ScrollArea>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(result)}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        PDF
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -513,13 +497,13 @@ export function ResultsComparison() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-2">
                 No hay resultados disponibles
               </h3>
               <p className="text-sm text-muted-foreground">
-                Sube documentos y ejecuta un análisis para ver los resultados
-                aquí.
+                Sube documentos y ejecuta un análisis con IA para ver los
+                resultados aquí.
               </p>
             </div>
           </CardContent>

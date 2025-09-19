@@ -1,0 +1,101 @@
+📑 Documentación de Usuario - PlagioCheck
+📌 Tabla de Contenidos
+Introducción
+Requisitos del Sistema
+Primeros Pasos
+Registro de Usuario
+Inicio de Sesión
+Panel de Control
+Subida de Documentos
+Análisis de Documentos
+Interpretación de Resultados
+Historial de Análisis
+Configuración de la Cuenta
+Preguntas Frecuentes
+🌟 Introducción
+PlagioCheck es una herramienta en línea diseñada para ayudar a estudiantes, profesores y profesionales a detectar similitudes entre documentos. Nuestra plataforma utiliza algoritmos avanzados para comparar textos y proporcionar informes detallados sobre posibles coincidencias.
+
+[IMAGEN: Captura de pantalla de la página principal]
+
+💻 Requisitos del Sistema
+Navegador web actualizado (Chrome, Firefox, Safari, Edge)
+Conexión a Internet estable
+Cuenta de correo electrónico válida
+Documentos en formato PDF para análisis
+🚀 Primeros Pasos
+Registro de Usuario
+Haga clic en "Registrarse" en la página de inicio
+Complete el formulario con su información personal
+Verifique su cuenta a través del correo electrónico recibido
+Inicie sesión con sus credenciales
+[IMAGEN: Formulario de registro]
+
+Inicio de Sesión
+Ingrese su correo electrónico y contraseña
+Haga clic en "Iniciar Sesión"
+Será redirigido al panel de control
+📊 Panel de Control
+El panel de control es su centro de operaciones donde podrá:
+
+Ver estadísticas rápidas de sus análisis
+Navegar entre las diferentes secciones
+Acceder a sus documentos recientes
+[IMAGEN: Vista del panel de control]
+
+📤 Subida de Documentos
+Haga clic en "Subir Documentos"
+Arrastre y suelte los archivos PDF o haga clic para seleccionarlos
+Espere a que los archivos se carguen correctamente
+Seleccione al menos dos documentos para comparar
+[IMAGEN: Área de carga de documentos]
+
+🔍 Análisis de Documentos
+Una vez cargados los documentos, haga clic en "Analizar"
+Espere a que el sistema procese los documentos
+El progreso se mostrará en la barra de carga
+Recibirá una notificación cuando el análisis esté completo
+[IMAGEN: Barra de progreso del análisis]
+
+📊 Interpretación de Resultados
+Los resultados se muestran con un porcentaje de similitud:
+
+🔴 Alto Riesgo (70-100%): Alta probabilidad de plagio
+🟡 Riesgo Medio (40-69%): Posibles coincidencias que requieren revisión
+🟢 Bajo Riesgo (0-39%): Baja probabilidad de plagio
+Cada resultado incluye:
+
+Porcentaje de similitud
+Fragmentos coincidentes resaltados
+Opción para descargar un informe detallado
+[IMAGEN: Ejemplo de resultados]
+
+📚 Historial de Análisis
+Acceda a su historial para:
+
+Ver análisis anteriores
+Comparar resultados
+Descargar informes previos
+Eliminar análisis antiguos
+[IMAGEN: Vista del historial]
+
+⚙️ Configuración de la Cuenta
+En esta sección podrá:
+
+Actualizar su información personal
+Cambiar su contraseña
+Configurar preferencias de notificación
+Gestionar la suscripción (si aplica)
+[IMAGEN: Configuración de cuenta]
+
+❓ Preguntas Frecuentes
+¿Qué tipos de archivos soporta PlagioCheck?
+Actualmente solo soportamos archivos en formato PDF.
+
+¿Cómo se calcula el porcentaje de similitud?
+Utilizamos algoritmos avanzados que comparan el contenido textual de los documentos, considerando no solo el texto idéntico sino también paráfrasis y reescrituras.
+
+¿Es seguro subir mis documentos?
+Sí, todos los documentos se procesan de forma segura y se eliminan de nuestros servidores después de 30 días.
+
+¿Puedo comparar más de dos documentos a la vez?
+Actualmente solo es posible comparar dos documentos a la vez para garantizar la precisión de los resultados.

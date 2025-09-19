@@ -7,23 +7,36 @@ import {
   Shield,
   Upload,
   FileText,
-  History,
   Settings,
   LogOut,
-  User,
   Menu,
   X,
   TrendingUp,
   AlertTriangle,
+  BookAudio,
+  Map,
+  Calendar,
+  Presentation,
 } from "lucide-react";
 import { DocumentUpload } from "@/components/document-upload";
 import { ResultsComparison } from "@/components/results-comparison";
-import { ComparisonHistory } from "@/components/comparison-history";
 import { AccountSettings } from "@/components/account-settings";
 import { Card, CardContent } from "@/components/ui/card";
 import type { PlagiarismResult } from "@/lib/plagiarism-detector";
+import { AcademicSummarizer } from "./academic-summarizer";
+import { CitationManager } from "./citation-manager";
+import { PresentationMode } from "./presentation-mode";
+import { MindMapGenerator } from "./mind-map-generator";
 
-type ActiveSection = "upload" | "results" | "history" | "settings";
+type ActiveSection =
+  | "upload"
+  | "results"
+  | "history"
+  | "settings"
+  | "sumary"
+  | "mind-map"
+  | "citation"
+  | "presentation";
 
 export function Dashboard() {
   const { user, logout } = useAuth();
@@ -39,7 +52,18 @@ export function Dashboard() {
   const menuItems = [
     { id: "upload" as const, label: "Subir Documentos", icon: Upload },
     { id: "results" as const, label: "Resultados", icon: FileText },
-    { id: "history" as const, label: "Historial", icon: History },
+    { id: "sumary" as const, label: "Resumen Academico", icon: BookAudio },
+    { id: "mind-map" as const, label: "Generarar Mapa", icon: Map },
+    {
+      id: "citation" as const,
+      label: "Manejador de citas academicas",
+      icon: Calendar,
+    },
+    {
+      id: "presentation" as const,
+      label: "Modo presentación",
+      icon: Presentation,
+    },
     { id: "settings" as const, label: "Configuración", icon: Settings },
   ];
 
@@ -57,21 +81,6 @@ export function Dashboard() {
       });
     }
   }, [activeSection]); // Refresh stats when section changes
-
-  const handleAnalysisComplete = (result: PlagiarismResult) => {
-    console.log("[v0] Analysis completed:", result);
-    setStats((prev) => ({
-      totalAnalyses: prev.totalAnalyses + 1,
-      highRiskCount:
-        result.similarity >= 70 ? prev.highRiskCount + 1 : prev.highRiskCount,
-      mediumRiskCount:
-        result.similarity >= 40 && result.similarity < 70
-          ? prev.mediumRiskCount + 1
-          : prev.mediumRiskCount,
-      lowRiskCount:
-        result.similarity < 40 ? prev.lowRiskCount + 1 : prev.lowRiskCount,
-    }));
-  };
 
   const handleNavigateToResults = () => {
     setActiveSection("results");
@@ -159,21 +168,29 @@ export function Dashboard() {
               </div>
             )}
             <DocumentUpload
-              onAnalysisComplete={handleAnalysisComplete}
+              // onAnalysisComplete={handleAnalysisComplete}
               onNavigateToResults={handleNavigateToResults}
             />
           </div>
         );
       case "results":
         return <ResultsComparison />;
-      case "history":
-        return <ComparisonHistory />;
+
+      case "sumary":
+        return <AcademicSummarizer />;
+      case "mind-map":
+        return <MindMapGenerator />;
+      case "citation":
+        return <CitationManager />;
+      case "presentation":
+        return <PresentationMode />;
       case "settings":
         return <AccountSettings />;
+
       default:
         return (
           <DocumentUpload
-            onAnalysisComplete={handleAnalysisComplete}
+            // onAnalysisComplete={handleAnalysisComplete}
             onNavigateToResults={handleNavigateToResults}
           />
         );
@@ -220,7 +237,7 @@ export function Dashboard() {
           </div>
 
           {/* User info */}
-          <div className="p-4 border-b border-border">
+          {/* <div className="p-4 border-b border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <User className="h-5 w-5 text-primary" />
@@ -230,7 +247,7 @@ export function Dashboard() {
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {stats.totalAnalyses > 0 && (
             <div className="p-4 border-b border-border">

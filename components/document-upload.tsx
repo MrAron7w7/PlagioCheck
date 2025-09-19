@@ -20,13 +20,10 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  Zap,
-  Shield,
+  Brain,
 } from "lucide-react";
-import {
-  detectPlagiarism,
-  type PlagiarismResult,
-} from "@/lib/plagiarism-detector";
+import { geminiDetector, type PlagiarismResult } from "@/lib/gemini-client";
+import { extractTextFromPDF } from "@/lib/pdf-extractor";
 
 interface UploadedFile {
   id: string;
@@ -34,6 +31,7 @@ interface UploadedFile {
   size: number;
   status: "uploading" | "uploaded" | "error";
   file?: File;
+  extractedText?: string;
 }
 
 interface DocumentUploadProps {
@@ -76,7 +74,7 @@ export function DocumentUpload({
     }
   };
 
-  const handleFiles = (fileList: File[]) => {
+  const handleFiles = async (fileList: File[]) => {
     const pdfFiles = fileList.filter((file) => file.type === "application/pdf");
 
     if (pdfFiles.length !== fileList.length) {
@@ -93,14 +91,21 @@ export function DocumentUpload({
 
     setFiles((prev) => [...prev, ...newFiles]);
 
-    // Simulate upload
-    newFiles.forEach((file) => {
-      setTimeout(() => {
+    for (const file of newFiles) {
+      try {
+        const extractedText = await extractTextFromPDF(file.file!);
         setFiles((prev) =>
-          prev.map((f) => (f.id === file.id ? { ...f, status: "uploaded" } : f))
+          prev.map((f) =>
+            f.id === file.id ? { ...f, status: "uploaded", extractedText } : f
+          )
         );
-      }, 1000 + Math.random() * 2000);
-    });
+      } catch (error) {
+        console.error("Error extracting text from PDF:", error);
+        setFiles((prev) =>
+          prev.map((f) => (f.id === file.id ? { ...f, status: "error" } : f))
+        );
+      }
+    }
   };
 
   const removeFile = (fileId: string) => {
@@ -123,7 +128,7 @@ export function DocumentUpload({
     }
 
     const uploadedFiles = files.filter(
-      (f) => f.status === "uploaded" && f.file
+      (f) => f.status === "uploaded" && f.extractedText
     );
     if (uploadedFiles.length < 2) {
       return;
@@ -134,23 +139,23 @@ export function DocumentUpload({
 
     try {
       const stages = [
-        "Extrayendo texto de documentos...",
-        "Procesando contenido...",
-        "Analizando similitudes...",
-        "Calculando coincidencias...",
-        "Generando reporte final...",
+        "Preparando documentos para análisis...",
+        "Enviando a Gemini AI para procesamiento...",
+        "Analizando similitudes con IA avanzada...",
+        "Detectando coincidencias y paráfrasis...",
+        "Generando reporte detallado...",
       ];
 
       let currentStage = 0;
       const progressInterval = setInterval(() => {
         setAnalysisProgress((prev) => {
-          const newProgress = prev + 15;
-          if (newProgress >= stages.length * 20) {
+          const newProgress = prev + 12;
+          if (newProgress >= 85) {
             clearInterval(progressInterval);
-            return 90;
+            return 85;
           }
 
-          const stageIndex = Math.floor(newProgress / 20);
+          const stageIndex = Math.floor(newProgress / 17);
           if (stageIndex !== currentStage && stageIndex < stages.length) {
             setAnalysisStage(stages[stageIndex]);
             currentStage = stageIndex;
@@ -158,28 +163,39 @@ export function DocumentUpload({
 
           return newProgress;
         });
-      }, 800);
+      }, 1200);
 
-      const fileA = uploadedFiles[0].file!;
-      const fileB = uploadedFiles[1].file!;
+      const documents = uploadedFiles.map((file) => ({
+        name: file.name,
+        content: file.extractedText!,
+      }));
 
-      const result = await detectPlagiarism(fileA, fileB);
+      const result = await geminiDetector.analyzePlagiarism(documents);
+
+      const enhancedResult = {
+        ...result,
+        id: Date.now().toString(),
+        documents: documents.map((doc) => doc.name),
+        analysisDate: new Date(),
+        analysisType: "AI-Powered",
+        totalDocuments: documents.length,
+      };
 
       clearInterval(progressInterval);
       setAnalysisProgress(100);
-      setAnalysisStage("¡Análisis completado!");
+      setAnalysisStage("¡Análisis con IA completado!");
 
       const existingResults = JSON.parse(
         localStorage.getItem("plagiarism-results") || "[]"
       );
-      const updatedResults = [result, ...existingResults];
+      const updatedResults = [enhancedResult, ...existingResults];
       localStorage.setItem(
         "plagiarism-results",
         JSON.stringify(updatedResults)
       );
 
       if (onAnalysisComplete) {
-        onAnalysisComplete(result);
+        onAnalysisComplete(enhancedResult);
       }
 
       setTimeout(() => {
@@ -188,9 +204,9 @@ export function DocumentUpload({
         if (onNavigateToResults) {
           onNavigateToResults();
         }
-      }, 1500);
+      }, 2000);
     } catch (error) {
-      console.error("Error during analysis:", error);
+      console.error("Error during AI analysis:", error);
       setIsAnalyzing(false);
       setAnalysisProgress(0);
       setAnalysisStage("");
@@ -205,15 +221,15 @@ export function DocumentUpload({
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Zap className="h-6 w-6 text-primary" />
+              <Brain className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-primary">
-                Detección Avanzada de Plagio
+                Detección de Plagio con IA Gemini
               </h3>
               <p className="text-sm text-muted-foreground">
-                Algoritmos de IA que detectan similitudes con precisión
-                profesional, similar a Turnitin
+                Análisis avanzado con inteligencia artificial que detecta
+                similitudes, paráfrasis y reformulaciones
               </p>
             </div>
           </div>
@@ -334,12 +350,12 @@ export function DocumentUpload({
             <div className="text-center space-y-4">
               <div>
                 <h3 className="font-semibold flex items-center justify-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  Listo para Analizar
+                  <Brain className="h-5 w-5 text-primary" />
+                  Listo para Análisis con IA
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {uploadedFiles.length} documentos listos para comparación de
-                  plagio
+                  {uploadedFiles.length} documentos listos para análisis
+                  avanzado con Gemini AI
                 </p>
               </div>
               <Button
@@ -350,12 +366,12 @@ export function DocumentUpload({
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analizando Plagio...
+                    Analizando con IA...
                   </>
                 ) : (
                   <>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Analizar Plagio
+                    <Brain className="h-4 w-4 mr-2" />
+                    Analizar con Gemini AI
                   </>
                 )}
               </Button>
@@ -366,10 +382,10 @@ export function DocumentUpload({
                     className="w-full max-w-xs mx-auto"
                   />
                   <Alert>
-                    <AlertCircle className="h-4 w-4" />
+                    <Brain className="h-4 w-4" />
                     <AlertDescription>
                       {analysisStage ||
-                        `Analizando documentos... ${analysisProgress}%`}
+                        `Procesando con IA... ${analysisProgress}%`}
                     </AlertDescription>
                   </Alert>
                 </div>
