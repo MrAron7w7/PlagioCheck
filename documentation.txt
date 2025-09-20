@@ -1,72 +1,199 @@
 📑 Documentación de Usuario - PlagioCheck
 📌 Tabla de Contenidos
-Introducción
-Requisitos del Sistema
-Primeros Pasos
-Registro de Usuario
-Inicio de Sesión
-Panel de Control
-Subida de Documentos
-Análisis de Documentos
-Interpretación de Resultados
-Historial de Análisis
-Configuración de la Cuenta
-Preguntas Frecuentes
+- Introducción
+- Características Principales
+- Requisitos del Sistema
+- Primeros Pasos
+  - Registro de Usuario
+  - Inicio de Sesión
+- Panel de Control
+- Subida de Documentos
+- Análisis de Documentos
+- Herramientas Académicas
+  - Resumidor Académico
+  - Gestor de Citas
+  - Generador de Mapas Mentales
+  - Modo Presentación
+- Interpretación de Resultados
+- Historial de Análisis
+- Configuración de la Cuenta
+- Preguntas Frecuentes
+
 🌟 Introducción
-PlagioCheck es una herramienta en línea diseñada para ayudar a estudiantes, profesores y profesionales a detectar similitudes entre documentos. Nuestra plataforma utiliza algoritmos avanzados para comparar textos y proporcionar informes detallados sobre posibles coincidencias.
+PlagioCheck es una herramienta avanzada de análisis de similitud de textos que utiliza inteligencia artificial para ayudar a estudiantes, profesores y profesionales a detectar y prevenir el plagio académico. Nuestra plataforma combina algoritmos de comparación de texto con el poder de la IA de Google Gemini para ofrecer análisis precisos y detallados.
 
 [IMAGEN: Captura de pantalla de la página principal]
 
+✨ Características Principales
+- 🎯 Detección de similitud entre documentos con resaltado de coincidencias
+- 📊 Generación de informes detallados en PDF
+- 🔍 Análisis de parafraseo y reescritura
+- 📚 Herramientas académicas integradas
+- 🖥️ Interfaz intuitiva y fácil de usar
+
 💻 Requisitos del Sistema
-Navegador web actualizado (Chrome, Firefox, Safari, Edge)
-Conexión a Internet estable
-Cuenta de correo electrónico válida
-Documentos en formato PDF para análisis
+- Navegador web actualizado (Chrome, Firefox, Safari, Edge)
+- Conexión a Internet estable
+- Cuenta de correo electrónico válida
+- Documentos en formato PDF, DOCX o TXT
+- JavaScript habilitado
+
 🚀 Primeros Pasos
-Registro de Usuario
-Haga clic en "Registrarse" en la página de inicio
-Complete el formulario con su información personal
-Verifique su cuenta a través del correo electrónico recibido
-Inicie sesión con sus credenciales
+
+🔹 Registro de Usuario
+1. Haga clic en "Registrarse" en la página de inicio
+2. Complete el formulario con su información personal
+3. Verifique su cuenta a través del correo electrónico recibido
+4. Inicie sesión con sus credenciales
+
 [IMAGEN: Formulario de registro]
 
-Inicio de Sesión
-Ingrese su correo electrónico y contraseña
-Haga clic en "Iniciar Sesión"
-Será redirigido al panel de control
+🔹 Inicio de Sesión
+1. Ingrese su correo electrónico y contraseña
+2. Haga clic en "Iniciar Sesión"
+3. Será redirigido al panel de control
+
 📊 Panel de Control
 El panel de control es su centro de operaciones donde podrá:
 
-Ver estadísticas rápidas de sus análisis
-Navegar entre las diferentes secciones
-Acceder a sus documentos recientes
+- Ver estadísticas detalladas de sus análisis
+- Navegar entre las diferentes herramientas académicas
+- Acceder a su historial de análisis recientes
+- Gestionar su perfil y configuraciones
+- Explorar las diferentes funcionalidades de la plataforma
+
 [IMAGEN: Vista del panel de control]
 
 📤 Subida de Documentos
-Haga clic en "Subir Documentos"
-Arrastre y suelte los archivos PDF o haga clic para seleccionarlos
-Espere a que los archivos se carguen correctamente
-Seleccione al menos dos documentos para comparar
+1. Haga clic en "Subir Documentos" en la barra lateral
+2. Arrastre y suelte los archivos o haga clic para seleccionarlos
+   - Formatos soportados: PDF, DOCX, TXT
+   - Tamaño máximo por archivo: 10MB
+3. Espere a que los archivos se carguen correctamente
+4. Seleccione al menos dos documentos para comparar
+5. Haga clic en "Analizar" para iniciar el proceso
+
 [IMAGEN: Área de carga de documentos]
 
 🔍 Análisis de Documentos
-Una vez cargados los documentos, haga clic en "Analizar"
-Espere a que el sistema procese los documentos
-El progreso se mostrará en la barra de carga
-Recibirá una notificación cuando el análisis esté completo
+1. Una vez cargados los documentos, haga clic en "Analizar"
+2. El sistema procesará los documentos utilizando algoritmos avanzados y la IA de Gemini
+3. El progreso se mostrará en la barra de carga en tiempo real
+4. Recibirá una notificación cuando el análisis esté completo
+5. Los resultados se mostrarán en una interfaz interactiva
+
 [IMAGEN: Barra de progreso del análisis]
 
 📊 Interpretación de Resultados
-Los resultados se muestran con un porcentaje de similitud:
 
-🔴 Alto Riesgo (70-100%): Alta probabilidad de plagio
-🟡 Riesgo Medio (40-69%): Posibles coincidencias que requieren revisión
-🟢 Bajo Riesgo (0-39%): Baja probabilidad de plagio
-Cada resultado incluye:
+Los resultados del análisis incluyen:
 
-Porcentaje de similitud
-Fragmentos coincidentes resaltados
-Opción para descargar un informe detallado
+- **Porcentaje de similitud general** entre los documentos
+- **Fragmentos coincidentes** resaltados con códigos de colores
+- **Nivel de riesgo** (Bajo, Medio, Alto)
+- **Estadísticas detalladas** de coincidencias
+- **Opciones para exportar** el informe en formato PDF
+
+[IMAGEN: Ejemplo de resultados de análisis]
+
+📚 Herramientas Académicas
+
+🔹 Resumidor Académico
+- Genera resúmenes automáticos manteniendo el contexto académico
+- Ajusta la longitud del resumen según tus necesidades
+- Extrae palabras clave y conceptos principales
+- Formato académico estándar
+
+🔹 Gestor de Citas
+- Organiza tus referencias bibliográficas
+- Genera citas en múltiples formatos (APA, MLA, Chicago)
+- Exporta tu bibliografía
+- Integración con bases de datos académicas
+
+🔹 Generador de Mapas Mentales
+- Visualiza la estructura de documentos complejos
+- Crea mapas conceptuales interactivos
+- Exporta en diferentes formatos (PNG, PDF, SVG)
+- Personaliza colores y estilos
+
+🔹 Modo Presentación
+- Crea presentaciones profesionales de tus análisis
+- Incluye gráficos y estadísticas
+- Personaliza plantillas
+- Comparte fácilmente con colegas o estudiantes
+📋 Historial de Análisis
+
+Accede a tu historial completo de análisis realizados:
+
+1. **Filtrado avanzado**:
+   - Por fecha de análisis
+   - Por nivel de riesgo
+   - Por tipo de documento
+   - Por palabras clave
+
+2. **Acciones rápidas**:
+   - Ver detalles del análisis
+   - Regenerar informe
+   - Compartir resultados
+   - Eliminar análisis
+
+3. **Estadísticas mensuales**:
+   - Total de análisis realizados
+   - Promedio de similitud
+   - Tendencias de uso
+
+⚙️ Configuración de la Cuenta
+
+Personaliza tu experiencia en PlagioCheck:
+
+🔹 **Perfil**
+- Actualiza tu información personal
+- Cambia tu foto de perfil
+- Gestiona tus preferencias de notificaciones
+
+🔹 **Seguridad**
+- Cambio de contraseña
+- Autenticación de dos factores
+- Dispositivos conectados
+
+🔹 **Preferencias**
+- Tema claro/oscuro
+- Idioma de la interfaz
+- Unidades de medida
+- Formato de fechas
+
+🔹 **Suscripción**
+- Plan actual
+- Uso de almacenamiento
+- Historial de facturación
+- Actualización de plan
+
+❓ Preguntas Frecuentes
+
+### ¿Cómo funciona el sistema de detección de plagio?
+Nuestro sistema utiliza algoritmos avanzados de comparación de texto junto con inteligencia artificial para identificar similitudes entre documentos, incluyendo parafraseo y reescritura.
+
+### ¿Qué formatos de archivo son compatibles?
+Aceptamos documentos en formato PDF, DOCX y TXT con un tamaño máximo de 10MB por archivo.
+
+### ¿Cómo se garantiza la privacidad de mis documentos?
+Todos los documentos se procesan de forma segura y se almacenan con cifrado de extremo a extremo. Puedes eliminar tus documentos en cualquier momento.
+
+### ¿Puedo compartir mis informes con otros usuarios?
+Sí, puedes generar enlaces compartibles o exportar los informes en formato PDF para compartirlos con colegas o profesores.
+
+### ¿Hay un límite en la cantidad de análisis que puedo realizar?
+Los límites dependen de tu plan actual. Los usuarios gratuitos tienen un límite mensual, mientras que los planes de pago ofrecen análisis ilimitados.
+
+### ¿Cómo puedo exportar mis resultados?
+Puedes exportar los resultados en formato PDF directamente desde la sección de resultados o desde tu historial de análisis.
+
+### ¿Ofrecen soporte técnico?
+Sí, ofrecemos soporte por correo electrónico y chat en vivo para todos nuestros usuarios. Los planes premium incluyen soporte prioritario.
+
+---
+*Documentación actualizada: Septiembre 2024*
+*Versión de la aplicación: 2.0.0*
 [IMAGEN: Ejemplo de resultados]
 
 📚 Historial de Análisis

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { TextProcessor } from "./text-processor"
 
 // Initialize Gemini AI client
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyDDL1SeXvWjjcYcVWLA5dFlvN8U61_ZtpE")
@@ -23,25 +24,7 @@ export interface PlagiarismResult {
 export class GeminiPlagiarismDetector {
   private model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
-  async analyzePlagiarism(documents: { name: string; content: string }[]): Promise<PlagiarismResult> {
-    if (documents.length < 2) {
-      throw new Error("Se necesitan al menos 2 documentos para comparar")
-    }
 
-    const prompt = this.createPlagiarismPrompt(documents)
-
-    try {
-      const result = await this.model.generateContent(prompt)
-      const response = await result.response
-      const text = response.text()
-
-      return this.parsePlagiarismResponse(text, documents)
-    } catch (error) {
-      console.error("Error analyzing plagiarism with Gemini:", error)
-      // Fallback to local analysis if API fails
-      return this.fallbackAnalysis(documents)
-    }
-  }
 
   private createPlagiarismPrompt(documents: { name: string; content: string }[]): string {
     const docTexts = documents.map((doc, index) => `DOCUMENTO ${index + 1} (${doc.name}):\n${doc.content}\n\n`).join("")
@@ -381,6 +364,107 @@ Responde EXCLUSIVAMENTE con el JSON válido, sin texto adicional.
       ]
     };
   }
+
+// Dentro de la clase GeminiPlagiarismDetector, modifica el método analyzePlagiarism:
+async analyzePlagiarism(documents: { name: string; content: string }[]): Promise<PlagiarismResult> {
+  if (documents.length < 2) {
+    throw new Error("Se necesitan al menos 2 documentos para comparar");
+  }
+
+  // Análisis local primero para coincidencias exactas
+  const exactMatches = TextProcessor.findExactMatches(
+    documents[0].content, 
+    documents[1].content,
+    documents[1].name
+  );
+  
+  // Análisis con IA para coincidencias más complejas
+  let aiResult: PlagiarismResult;
+  try {
+    const prompt = this.createEnhancedPlagiarismPrompt(documents);
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    aiResult = this.parsePlagiarismResponse(text, documents);
+  } catch (error) {
+    console.error("Error analyzing plagiarism with Gemini:", error);
+    aiResult = this.fallbackAnalysis(documents);
+  }
+  
+  // Combinar resultados (eliminar duplicados)
+  const combinedMatches = [...exactMatches, ...aiResult.matches].filter(
+    (match, index, self) => 
+      index === self.findIndex(m => 
+        m.startIndex === match.startIndex && 
+        m.endIndex === match.endIndex
+      )
+  );
+  
+  // Calcular similitud general mejorada
+  const overallSimilarity = this.calculateOverallSimilarity(combinedMatches, documents);
+  
+  return {
+    overallSimilarity,
+    matches: combinedMatches,
+    summary: aiResult.summary,
+    recommendations: aiResult.recommendations
+  };
 }
+
+// Añade este nuevo método después de analyzePlagiarism:
+private createEnhancedPlagiarismPrompt(documents: { name: string; content: string }[]): string {
+  return `
+ANALIZA meticulosamente los siguientes documentos para detectar plagio, paráfrasis y similitudes textuales.
+
+DOCUMENTOS A COMPARAR:
+${documents.map((doc, index) => `DOCUMENTO ${index + 1} (${doc.name}):\n${doc.content.substring(0, 10000)}\n`).join("\n")}
+
+INSTRUCCIONES ESPECÍFICAS:
+1. Identifica TODOS los fragmentos similares (mínimo 5 palabras consecutivas)
+2. Clasifica por tipo: 
+   - "EXACTO" (texto idéntico, 100% similitud)
+   - "PARAFRASIS" (mismo significado, palabras diferentes, 70-99% similitud)
+   - "SIMILAR" (ideas similares, 40-69% similitud)
+3. Para cada coincidencia, proporciona:
+   - Texto original EXACTO con 10 palabras de contexto antes/después
+   - Texto coincidente EXACTO
+   - Porcentaje de similitud preciso
+   - Posiciones exactas (índices de caracteres)
+   - Tipo de similitud (exacta/parafrasis/similar)
+
+RESPONDER EXCLUSIVAMENTE con JSON válido:
+
+{
+  "overallSimilarity": número,
+  "matches": [{
+    "originalText": "texto completo con contexto",
+    "matchedText": "texto coincidente con contexto", 
+    "similarity": número,
+    "startIndex": número,
+    "endIndex": número,
+    "sourceDocument": "nombre documento",
+    "type": "EXACTO|PARAFRASIS|SIMILAR"
+  }],
+  "summary": "resumen detallado en español",
+  "recommendations": ["array", "de", "recomendaciones"]
+}
+`;
+}
+
+// Añade este método para calcular similitud general
+private calculateOverallSimilarity(matches: PlagiarismMatch[], documents: { name: string; content: string }[]): number {
+  if (matches.length === 0) return 0;
+  
+  const totalChars = documents.reduce((sum, doc) => sum + doc.content.length, 0);
+  const matchedChars = matches.reduce((sum, match) => sum + (match.endIndex - match.startIndex), 0);
+  
+  return Math.min(100, Math.round((matchedChars / totalChars) * 100 * 2)); // ×2 porque son 2 documentos
+}
+
+  
+}
+
+
+
 
 export const geminiDetector = new GeminiPlagiarismDetector()
