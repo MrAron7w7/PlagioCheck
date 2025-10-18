@@ -22,7 +22,7 @@ export interface PlagiarismResult {
 }
 
 export class GeminiPlagiarismDetector {
-  private model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+  private model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
 
 
 
