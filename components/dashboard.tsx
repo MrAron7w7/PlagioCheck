@@ -54,11 +54,11 @@ export function Dashboard() {
     { id: "results" as const, label: "Resultados", icon: FileText },
     { id: "sumary" as const, label: "Resumen Academico", icon: BookAudio },
     { id: "mind-map" as const, label: "Generarar Mapa", icon: Map },
-    {
-      id: "citation" as const,
-      label: "Manejador de citas academicas",
-      icon: Calendar,
-    },
+    // {
+    //   id: "citation" as const,
+    //   label: "Manejador de citas academicas",
+    //   icon: Calendar,
+    // },
     {
       id: "presentation" as const,
       label: "Modo presentación",
